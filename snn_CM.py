@@ -12,6 +12,9 @@ import os
 import snn_cry
 
 
+# May God have mercy with whoever has to read this abomination
+
+
 class IOMP:
     _store_obj = []  # for log stuff
 
