@@ -1,6 +1,6 @@
 # FuturerReplacements
 
-stuff that will someday be SMTIC.2
+stuff that will someday be SMTIC.2 (or SMTIAVC)
 
 some stuff is not finished and maybe I have not included some of my own modles you would need to run some func/mehtods
 
