@@ -70,8 +70,7 @@ def get_key(val: Any, search_dict: Dict[Any, Any]) -> Any:
 
 
 class ValBitsReadWarning(Warning):
-    def __init__(self, a: str):
-        super().__init__(a)
+    pass
 
 
 def write_val_bits(a: Union[Tuple[int, ...], List[int]], **kwargs) -> str:
