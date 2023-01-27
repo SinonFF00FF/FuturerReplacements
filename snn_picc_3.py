@@ -9,6 +9,7 @@ import warnings
 # May God have mercy with whoever has to read this abomination
 
 # I just finished this abomination and learn that smth like this is not new
+# my disappointment is immeasurable and my day is ruined
 # fuck now my life is shattered :( :( :(
 # now I don't like chatgbt anymore
 
