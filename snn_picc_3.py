@@ -8,11 +8,15 @@ import warnings
 
 # May God have mercy with whoever has to read this abomination
 
+# I just finished this abomination and learn that smth like this is not new
+# fuck now my life is shattered :( :( :(
+# now I don't like chatgbt anymore
+
 
 class __Var:
     bit_map = {"0": "0", "1": "10", "end": "11"}  # pls dont change
-    data_index = 1
-    cc_index = 1
+    data_index = 1  # if you want to change the indexes you maybe need to change the _make_cc/_make_data funcs
+    cc_index = 1  # or the order in witch those func are called (so just don't change them)
 
 
 class BaseICInitWarning(Warning):
@@ -23,16 +27,20 @@ class BaseICFormatWaring(Warning):
     pass
 
 
+class SpaceError(Exception):
+    pass
+
+
 def _bytes_gen(a: bytes, max_len: int) -> Generator[str, None, None]:
-    store_item = []
+    si = []
     for y in a:
-        for yy in snn_grl.make_set_len(bin(y)[2:], 8):
-            store_item.append(yy)
-            if len(store_item) == max_len:
-                yield "".join(store_item)
-                store_item = []
-    if store_item:
-        yield snn_grl.make_set_len("".join(store_item), max_len, side="right")
+        for yy in snn_grl.make_set_len_4(bin(y)[2:], 8):
+            si.append(yy)
+            if len(si) == max_len:
+                yield "".join(si)
+                si = []
+    if si:
+        yield snn_grl.make_set_len("".join(si), max_len, side="right")
 
 
 def _make_cc_mpb(a: Union[Tuple[int, ...], List[int], bytes]) -> Tuple[List[List[int]], int]:
@@ -64,10 +72,10 @@ def _read_data(a: Union[Generator[bytes, None, None], bytes]) -> bytes:
     for iy, y in enumerate(a):
         if d:
             y = int.from_bytes(y, "little")
-        for yy in snn_grl.make_set_len(bin(y)[2:], 8):
+        for yy in snn_grl.make_set_len_4(bin(y)[2:], 8):
             b += yy
             if len(b) > 2:
-                raise OverflowError("no data len found")
+                raise SpaceError("no data len found")
             if b in __Var.bit_map.values():
                 if b == __Var.bit_map["end"]:
                     c = int("".join(list1[::-1]), 2)
@@ -79,7 +87,7 @@ def _read_data(a: Union[Generator[bytes, None, None], bytes]) -> bytes:
             continue
         break
     else:
-        raise OverflowError("no data len found")
+        raise SpaceError("no data len found")
     if d:
         list2 = []
         for iyy, yy in enumerate(a):
@@ -91,7 +99,7 @@ def _read_data(a: Union[Generator[bytes, None, None], bytes]) -> bytes:
         return a[iy + 1:iy + 1 + c]
 
 
-def make_cc(func):
+def _make_cc(func):
     def IN(*args, **kwargs):
         try:
             a = kwargs.get("cc", None)
@@ -102,7 +110,7 @@ def make_cc(func):
             else:
                 kwargs.pop("cc")
         except (IndexError, KeyError, TypeError):
-            raise ValueError("no data given")
+            raise ValueError("no cc given")
         return func(*args, cc=_make_cc_mpb(a), **kwargs)
 
     return IN
@@ -141,6 +149,7 @@ class _Base_SI:
         else:
             warnings.warn(BaseICInitWarning("image_mode isn't in bit_deep_list"
                                             " (or I forgot to add it (that's more likely))"))
+            self.bit_deep, self.bit_deep_channel = 0, 0
         return self
 
     def save(self, a: str, abs_path: bool = False):
@@ -158,19 +167,11 @@ class _Base_SI:
         if a:
             self.IMG.show()
 
-    def __enter__(self):
-        # TODO: make this func pls
-        pass
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        # TODO: make this func pls
-        pass
-
 
 class _Base_single_bit_IC(_Base_SI):
     ok_exts = [".png"]
 
-    def write(self, cc: Tuple[List[List[int]], int], data: bytes) -> None:
+    def _write(self, cc: Tuple[List[List[int]], int], data: bytes) -> None:
         """only call from subclass with processed cc (and data)"""
         a, b, p = _bytes_gen(data, cc[1]), cc[0], self.IMG.load()
         try:
@@ -179,13 +180,15 @@ class _Base_single_bit_IC(_Base_SI):
         except StopIteration:
             return
         if next(a, None) is not None:
-            raise OverflowError("the img is to small for the data")
+            raise SpaceError("the img is to small for the data")
 
-    def read(self, mpd: int, cc: List[List[int]], img0: Optional[_Base_SI] = None) -> Generator[bytes, None, None]:
+    def _read(self, mpd: int, cc: List[List[int]], img0: Optional[_Base_SI] = None) -> Generator[bytes, None, None]:
         si, i, b = [], 0, [cc]
         if img0 is not None:
-            b.append(img0)
+            b.append(None)
         for _, y in self.gen_obj:
+            if img0 is not None:
+                b[1] = next(img0.gen_obj)[1]
             i += mpd
             si.append(self._single_decode(y, *b))
             while i >= 8:
@@ -194,13 +197,12 @@ class _Base_single_bit_IC(_Base_SI):
                 si = [a[8:]]
                 i -= 8
 
-    @make_cc
+    @_make_cc
     def get_max_data(self, cc) -> int:
         """for getting the max number of bytes that the img can hold with the given cc \n
         :param cc: tbh idk how to explain what cc is (it's a tuple of int in range(256)) so good luck
         :return: the number of bytes the img can hold"""
         a = ((self.IMG.width * self.IMG.height - self._get_offset()) * cc[1] + 5) // 8
-        print(a)
         for y in range(a, 0, -1):
             b = len(bin(y)[2:])
             if (b + sum([1 for yy in range(b) if yy & y]) + 7) // 8 + y < a:
@@ -210,6 +212,10 @@ class _Base_single_bit_IC(_Base_SI):
 
 class IC_0(_Base_single_bit_IC):
     """for single bit swap with cc in header"""
+
+    def __init__(self):
+        super().__init__()
+        self.static_mpd, self.static_cc = None, None
 
     def from_Image(self, a: Image):
         super().from_Image(a)
@@ -221,7 +227,7 @@ class IC_0(_Base_single_bit_IC):
         list1, i, b, c = [], 0, self.bit_deep_channel - 1, len(d)
         for iy, y in enumerate(p):
             list2 = []
-            for iyy, yy in enumerate([y for y in snn_grl.make_set_len(bin(y)[2:], self.bit_deep_channel)]):
+            for iyy, yy in enumerate(snn_grl.make_set_len_4(bin(y)[2:], self.bit_deep_channel)):
                 if (b - iyy) in cc[iy]:
                     if i < c:
                         a = d[i]
@@ -237,12 +243,12 @@ class IC_0(_Base_single_bit_IC):
     def _single_decode(self, p0: Tuple[int, ...], cc: List[List[int]]) -> str:
         list1, b = [], self.bit_deep_channel - 1
         for iy, y in enumerate(p0):
-            for iyy, yy in enumerate([y for y in snn_grl.make_set_len(bin(y)[2:], self.bit_deep_channel)]):
+            for iyy, yy in enumerate([y for y in snn_grl.make_set_len_4(bin(y)[2:], self.bit_deep_channel)]):
                 if (b - iyy) in cc[iy]:
                     list1.append(yy)
         return "".join(list1)
 
-    @make_cc
+    @_make_cc
     @_make_data
     def encode(self, cc, data: bytes) -> None:
         """nice single bit swap encode func \n
@@ -251,13 +257,13 @@ class IC_0(_Base_single_bit_IC):
         b, p = _write_cc_header(cc, self.static_mpd), self.IMG.load()
         for _, y in zip(range((len(self.static_cc) * 8 - 1 + self.static_mpd) // self.static_mpd), self.gen_obj):
             p[y[0]] = self._single_encode(y[1], self.static_cc, next(b))
-        self.write(cc, data)
+        self._write(cc, data)
 
     def decode(self) -> bytes:
         """nice single bit swap decode func"""
         a = _make_cc_mpb(b''.join(
-            [y for _, y in zip(range(len(self.IMG.mode)), self.read(mpd=self.static_mpd, cc=self.static_cc))]))
-        return _read_data(self.read(mpd=a[1], cc=a[0]))
+            [y for _, y in zip(range(len(self.IMG.mode)), self._read(mpd=self.static_mpd, cc=self.static_cc))]))
+        return _read_data(self._read(mpd=a[1], cc=a[0]))
 
     def _get_offset(self) -> int:
         return (len(self.static_cc) * 8 - 1 + self.static_mpd) // self.static_mpd
@@ -266,20 +272,47 @@ class IC_0(_Base_single_bit_IC):
 class IC_1(_Base_single_bit_IC):
     """for single xor bit with cc in header"""
 
-    def single_encode(self, cc, data, p0, p1) -> Tuple[int, ...]:
-        pass
+    def _single_encode(self, p0: Tuple[int, ...], cc: List[List[int]], d: str) -> Tuple[int, ...]:
+        real_d, list1, b, c, i = int(d, 2), [], self.bit_deep_channel - 1, len(d), 0
+        for iy, y in enumerate(p0):
+            a = 0
+            for yy in range(b, -1, -1):
+                if yy in cc[iy] and i < c:
+                    e = bool((1 << i) & real_d) ^ bool(y & (1 << yy))
+                    i += 1
+                else:
+                    e = bool(y & (1 << yy))
+                a += e << yy
+            list1.append(a)
+        return tuple(list1)
 
-    def single_decode(self, cc, p0, p1) -> str:
-        pass
+    def _single_decode(self, p0: Tuple[int, ...], cc: List[List[int]], p1: Tuple[int, ...]) -> str:
+        list1, a, i = [], 0, 0
+        for iy, y in enumerate(zip(p0, p1)):
+            for yy in range(self.bit_deep_channel - 1, -1, -1):
+                if yy in cc[iy]:
+                    c = 1 << yy
+                    a += (bool(y[0] & c) ^ bool(y[1] & c)) << i
+                    i += 1
+        return snn_grl.make_set_len_4(bin(a)[2:], i)
 
-    @make_cc
+    @_make_cc
     @_make_data
-    def encode(self, cc, data) -> None:
-        pass
+    def encode(self, cc, data: bytes) -> None:
+        """nice single xor encode func \n
+        :param cc: tbh idk how to explain what cc is (it's a tuple of int in range(256)) so good luck
+        :param data: the data you want to put into the img"""
+        p, a = self.IMG.load(), next(self.gen_obj)
+        p[a[0]] = self._single_encode(a[1], cc[0], "1" * cc[1])
+        self._write(cc, data)
 
-    def decode(self, org_img) -> bytes:
-        pass
+    def decode(self, org_img: _Base_SI) -> bytes:
+        """nice single xor decode func \n
+        :param org_img: the original Image as an _Base_SI obj (or subclass of it) """
+        a = _make_cc_mpb([y0 ^ y1 for y0, y1 in zip(next(self.gen_obj)[1], next(org_img.gen_obj)[1])])
+        return _read_data(self._read(a[1], a[0], org_img))
 
     @staticmethod
     def _get_offset() -> int:
-        return 1
+        # tbh I have no clue why 1 doesn't work (idk maybe I will maybe look into it later)
+        return 2
