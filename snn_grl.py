@@ -61,6 +61,23 @@ def make_set_len(a: str, lenlen: int, fill_str: str = "0", side: str = "left") -
     return fill_str * ((lenlen - len(a)) * side[0]) + a + fill_str * ((lenlen - len(a)) * side[1])
 
 
+def make_set_len_4(a: str, lenlen: int) -> str:
+    return "0" * (lenlen - len(a)) + a
+
+
+def make_set_len_2(a: int, lenlen: Optional[int] = None, prefix: Optional[str] = "") -> str:
+    if lenlen is None:
+        lenlen = a.bit_length()
+    c = 1 << lenlen-1
+    return prefix + "".join(["1" if (a << y) & c else "0" for y in range(lenlen)])
+
+
+def make_set_len_3(a: int, lenlen: Optional[int] = None, prefix: Optional[str] = "") -> str:
+    if lenlen is None:
+        lenlen = a.bit_length()
+    return prefix + "".join(["1" if (a >> y) & 1 else "0" for y in range(lenlen)])
+
+
 def str_to_bytes(a: str, encoding: str = "utf8") -> bytes:
     return bytes(a, encoding=encoding)
 
@@ -103,7 +120,7 @@ def read_val_bits(a: Union[str, Generator[str, None, None]], int_count: int, **k
 
 
 def bitstr_to_bytes_2(a: str) -> bytes:
-    a = bytes([int(a[y:y+8], 2) for y in range(len(a)) if not y % 8])
+    a = bytes([int(a[y:y + 8], 2) for y in range(len(a)) if not y % 8])
     for iy, y in enumerate(a[::-1]):
         if y != 0:
             return a[:-iy] if iy else a
@@ -111,17 +128,16 @@ def bitstr_to_bytes_2(a: str) -> bytes:
 
 
 def bitstr_to_bytes(a: str) -> bytes:
-    print("in", a)
-    return bytes([int(a[y:y+8], 2) for y in range(len(a)) if not y % 8])
+    return bytes([int(a[y:y + 8], 2) for y in range(len(a)) if not y % 8])
 
 
 def bitstr_to_bytes_3(a: str) -> bytes:
-    return bytes([int(make_set_len(a[y*8:(y+1)*8], 8, side="right"), 2) for y in range((len(a)+7)//8)])
+    return bytes([int(make_set_len(a[y * 8:(y + 1) * 8], 8, side="right"), 2) for y in range((len(a) + 7) // 8)])
 
 
 def bitstr_to_bytes_gen(a: str) -> Generator[bytes, None, None]:
-    for y in range(len(a)//8):
-        yield bytes(int(a[y*8:(y+1)*8], 2))
+    for y in range(len(a) // 8):
+        yield bytes(int(a[y * 8:(y + 1) * 8], 2))
 
 
 def bytes_to_bitstr(a: bytes) -> str:
@@ -135,12 +151,12 @@ def bytes_to_bitstr_gen(a: bytes) -> Generator[str, None, None]:
 
 
 def snn_split(a: Union[str, list, bytes], b: int) -> List[Union[str, list, bytes]]:
-    return [a[y*b: (y+1)*b] for y in range((len(a)+b-1)//b)]
+    return [a[y * b: (y + 1) * b] for y in range((len(a) + b - 1) // b)]
 
 
 def snn_split_gen(a: Union[str, list, bytes], b: int) -> Generator[Union[str, list, bytes], None, None]:
-    for y in range((len(a)+b-1)//b):
-        yield a[y*b: (y+1)*b]
+    for y in range((len(a) + b - 1) // b):
+        yield a[y * b: (y + 1) * b]
 
 
 def gen_prime() -> Generator[int, None, None]:
@@ -157,7 +173,7 @@ def gen_prime() -> Generator[int, None, None]:
 
 
 def all_primes_to_number(a: int) -> List[int]:
-    b, a, c = [False, False] + [True] * (a-1), a+1, int(math.sqrt(a) + 1)
+    b, a, c = [False, False] + [True] * (a - 1), a + 1, int(math.sqrt(a) + 1)
     for y in range(2, c):
         if b[y]:
             for yy in range(y << 1, a, y):
@@ -166,7 +182,7 @@ def all_primes_to_number(a: int) -> List[int]:
 
 
 def all_primes_to_number_2(to_number: int) -> List[int]:
-    b, a, c, l1 = [False, False] + [True] * (to_number - 1), to_number + 1, int(to_number**0.5 + 1), [2]
+    b, a, c, l1 = [False, False] + [True] * (to_number - 1), to_number + 1, int(to_number ** 0.5 + 1), [2]
     for y in range(3, c, 2):
         if b[y]:
             for yy in range(y << 1, a, y):
@@ -226,7 +242,6 @@ class typing_match:
                         pass
             working = tuple(fake_w)
 
-
     def check(self, a: Any) -> bool:
         pass
 
@@ -234,5 +249,3 @@ class typing_match:
     def check2(cls, a: Any, b) -> bool:
         """b should be a typing obj"""
         return cls(b).check(a)
-
-
